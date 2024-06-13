@@ -26,7 +26,7 @@ void My_pwm_out::PID_init()
 	err = 0.0;
 	err_last = 0.0;
 	integral = 0.0;
-	Kp = 0.2;//0.2 *20 150 相差20 提升100/4 升2.5% 调整范围为300 比老版参数除以4
+	Kp = 0.18;//0.2 *20 150 相差20 提升100/4 升2.5% 调整范围为300 比老版参数除以4
 	Ki = 0.015;//0.015*20
 	Kd = 0.2;//0.2*20 待调整
 }
@@ -45,11 +45,11 @@ float My_pwm_out::PID_realize(float ActualSpeed,float speed)//位置式
 	err_last = err;
 	return Actualout;
 }
-void My_pwm_out::Press_PID(my_task_s &my_task_param,sensor_baro_s &sensor_baro_param)
+void My_pwm_out::Press_PID(my_task_s &my_task_param)
 {
 	if(my_task_param.task_num >= 2 && my_task_param.task_num <= 4 )//限值执行条件
 	{
-		my_task_param.output = LIMIT(1400-PID_realize(sensor_baro_param.pressure,my_task_param.barometer_ab-90),1325,1600);//原150的压差 35-50之间 42.5起始 //120 150
+		my_task_param.output = LIMIT(1420-PID_realize(my_task_param.barometer,my_task_param.barometer_ab-160),1350,1600);//原150的压差 35-50之间 42.5起始 //120 150
 	}
 }
 void My_pwm_out::Run()
@@ -61,7 +61,7 @@ void My_pwm_out::Run()
 	}
 	perf_begin(_loop_perf);
 	perf_count(_loop_interval_perf);
-	Press_PID(my_task,sensor_baro);
+	Press_PID(my_task);
 	const hrt_abstime time_stamp_now = hrt_absolute_time();
 	static uint8_t err_num,adsorb_num,stop_switch_num;
 	static uint16_t last_distance,pwm_out;//
@@ -78,12 +78,13 @@ void My_pwm_out::Run()
 	{
 		_sensor_baro_sub.copy(&sensor_baro);
 	}
+	my_task.barometer = sensor_baro.pressure;
 	if (_actuator_armed_sub.updated())//订阅状态信息
 	{
 		_actuator_armed_sub.copy(&actuator_armed);
 	}
-
-	if(input_rc.values[6]>1800 && actuator_armed.armed)//7通道吸附脱落标志置位
+	my_task.armed_f = actuator_armed.armed;
+	if(input_rc.values[6]>1800 && my_task.armed_f)//7通道吸附脱落标志置位
 	{
 		my_task.fall_f = 0;
 		my_task.adsorb_f = 1;
@@ -157,6 +158,7 @@ void My_pwm_out::Run()
 		// {
 		// 	_vehicle_local_position_sub.copy(&vehicle_local_position);
 		// }
+		my_task.throttle = 1650;//自动上升
 		if( my_task.distance - my_task.distance_ab < 100)
 		{
 			if((my_task.distance - last_distance <= 1)  && ((my_task.barometer_ab -80) > sensor_baro.pressure))//&& (abs(vehicle_local_position.vz) < 0.05)
@@ -186,42 +188,53 @@ void My_pwm_out::Run()
 		}
 		break;
 	case 2://吸附稳定进行切换 需要气压PID
-		if(my_task.adsorb_f == 0)//拨杆
+		my_task.throttle = 1500;
+		if(my_task.adsorb_f == 0 )//拨杆
 		{
 			my_task.task_num = 3;//完成解锁
 		}
 		break;
 	case 3://开始对PWM输出进行加速 需要气压PID
+		my_task.throttle = 1700;//油门从怠速加速
 		if (_actuator_outputs_sub.updated())
 		{
 			_actuator_outputs_sub.copy(&actuator_outputs);
 		}
 		my_task.outputs_sum = actuator_outputs.output[0]+actuator_outputs.output[1]+actuator_outputs.output[2]+actuator_outputs.output[3];
-		if(my_task.outputs_sum >=5200 )//加速
+		if(my_task.outputs_sum >=5700 )//加速
 		{
 			my_task.task_num = 4;
 		}
 		break;
 	case 4://减速 需要气压PID
+		my_task.throttle = 1320;//减速
 		if (_actuator_outputs_sub.updated())
 		{
 			_actuator_outputs_sub.copy(&actuator_outputs);
 		}
 		my_task.outputs_sum = actuator_outputs.output[0]+actuator_outputs.output[1]+actuator_outputs.output[2]+actuator_outputs.output[3];
-		if(my_task.outputs_sum <=5400 )//减速 最低1250 1250 1406 1406
+		if(my_task.outputs_sum <=5600 )//减速 最低1250 1250 1406 1406
 		{
 			my_task.distance_ab = my_task.distance;
 			my_task.task_num = 5;
 		}
 		break;
 	case 5://下降0-0.05油门为1350
-		if(abs(my_task.distance_ab - my_task.distance)>= 5)
+		if(my_task.throttle<1400)
+		{
+			my_task.throttle ++;//脱落下降
+		}
+		if(abs(my_task.distance_ab - my_task.distance)>= 30)
 		{
 			my_task.task_num = 6;
 		}
 		break;
 	case 6://下降0.05-0.15油门为1400
-		if(abs(my_task.distance_ab - my_task.distance) >= 35)//后续加上轮子依然直接掉落加入0.7大于一定值自动加大油门
+		if(my_task.throttle<1500)
+		{
+			my_task.throttle ++;//脱落下降
+		}
+		else
 		{
 			my_task.task_num = 0;
 		}

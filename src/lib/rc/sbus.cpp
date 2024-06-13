@@ -656,25 +656,9 @@ sbus_decode(uint64_t frame_time, uint8_t *frame, uint16_t *values, uint16_t *num
 	}
 	if(my_task.err_f == 0)
 	{
-		if(my_task.task_num ==1)//自动上升
+		if(my_task.task_num > 0)//自动上升
 		{
-			values[2] = 1700;
-		}
-		else if(my_task.task_num == 3)//油门从怠速加速
-		{
-			values[2] = 1800;
-		}
-		else if(my_task.task_num == 4)//减速
-		{
-			values[2] = 1250;
-		}
-		else if(my_task.task_num == 5)//脱落下降
-		{
-			values[2] = 1300;
-		}
-		else if(my_task.task_num == 6)//脱落下降
-		{
-			values[2] = 1400;
+			values[2] = my_task.throttle;
 		}
 	}
 

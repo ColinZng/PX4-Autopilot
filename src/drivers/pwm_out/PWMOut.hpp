@@ -81,7 +81,6 @@ public:
 	void sendActuatorArmed(bool armed, bool force_failsafe, bool manual_lockdown, bool prearm);//armº”»Î
 	bool updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 			   unsigned num_outputs, unsigned num_control_groups_updated) override;
-	bool armed_f;
 private:
 	void Run() override;
 

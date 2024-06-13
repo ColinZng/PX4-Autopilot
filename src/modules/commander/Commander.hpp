@@ -127,7 +127,6 @@ private:
 	uORB::Subscription	 _input_rc_sub{ORB_ID(input_rc)};
 	input_rc_s	 input_rc{};
 
-
 	bool armed_f{true};
 	void answer_command(const vehicle_command_s &cmd, uint8_t result);
 

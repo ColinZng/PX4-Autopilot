@@ -45,7 +45,7 @@ public:
 	bool init();
 
 	int print_status() override;
-	void Press_PID(my_task_s &my_task_param,sensor_baro_s &sensor_barok_param);
+	void Press_PID(my_task_s &my_task_param);
 private:
 	void Run() override;
 	void PID_init();

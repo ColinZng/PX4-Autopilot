@@ -171,7 +171,6 @@ bool PWMOut::updateOutputs(bool stop_motors, uint16_t outputs[MAX_ACTUATORS],
 			}
 			else if (_pwm_mask & (1 << i))
 			{
-				armed_f=0;
 				up_pwm_servo_set(i, outputs[i]);//Êä³öPWM
 			}
 			// if (_pwm_mask & (1 << i)) {

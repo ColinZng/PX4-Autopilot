@@ -1621,14 +1621,16 @@ void Commander::sendActuatorArmed()//arm加入
 	if(my_task.task_num ==2 && armed_f == 1)//上锁  后续加入判断解锁上锁与否 否则重复命令
 	{
 		send_vehicle_command(vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM,
-				     static_cast<float>(vehicle_command_s::ARMING_ACTION_DISARM)
+				     static_cast<float>(vehicle_command_s::ARMING_ACTION_DISARM),
+				     21196.f
 				);
 		armed_f = 0;
 	}
 	else if(my_task.task_num ==3 && armed_f == 0)//解锁
 	{
 		send_vehicle_command(vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM,
-					static_cast<float>(vehicle_command_s::ARMING_ACTION_ARM)
+				     static_cast<float>(vehicle_command_s::ARMING_ACTION_ARM),
+				     21196.f
 				);
 		armed_f = 1;
 	}
